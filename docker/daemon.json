@@ -1,0 +1,9 @@
+{
+  "registry-mirrors": [
+    "https://docker.hoolhub.top",
+    "https://dockerproxy.net"
+  ],
+  "insecure-registries": [],
+  "debug": false,
+  "experimental": false
+}

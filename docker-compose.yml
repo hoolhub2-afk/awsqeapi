@@ -1,0 +1,36 @@
+services:
+  awsqeapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # 是否使用中国镜像源（true/false），根据部署环境设置
+        # 在中国境内部署时设置为 true 加速构建
+        USE_CN_MIRROR: "${USE_CN_MIRROR:-false}"
+      # registry cache disabled for local/offline builds to avoid q2api:latest manifest error
+      # cache_from:
+      #   - q2api:latest
+    container_name: awsqeapi
+    ports:
+      # 生产环境仅绑定本地，通过 Nginx 反向代理访问
+      # 如需直接外部访问，可设置环境变量 BIND_HOST=0.0.0.0
+      - "${BIND_HOST:-0.0.0.0}:${PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      # default to SQLite under ./data; override DATABASE_URL in .env for other backends
+      HOST: "0.0.0.0"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      # Production recommendation:
+      # - set `MASTER_KEY` in `.env` (or `MASTER_KEY_PATH` to a persistent path)
+      # - avoid bind-mounting secrets from the repo
+    restart: unless-stopped
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --workers 4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

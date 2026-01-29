@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <title>AWSQ API - 登录</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <!-- 使用第三方 Google Fonts 镜像（避免 googleapis 在部分网络环境超时）；仍保留系统字体栈兜底 -->
+  <link rel="stylesheet" href="https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+    
+    .login-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    .logo-area {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .logo-icon {
+      font-size: 48px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+    
+    p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    .input-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+    
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      transition: color 0.3s;
+    }
+    
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 16px 14px 48px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 15px;
+      transition: all 0.3s;
+      outline: none;
+    }
+    
+    input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      background: rgba(15, 23, 42, 0.8);
+    }
+    
+    input:focus + .input-icon {
+      color: var(--color-primary);
+    }
+    
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .error-msg {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s;
+      /* position: absolute; REMOVED to prevent overflow/overlap */
+      /* top: 100px; REMOVED */
+      /* left: 40px; REMOVED */
+      /* right: 40px; REMOVED */
+      pointer-events: none;
+      z-index: 10;
+      height: 0; /* Initially hidden height */
+      overflow: hidden; /* Hide content when height is 0 */
+      margin: 0; /* Reset margin */
+      padding: 0; /* Reset padding */
+      border: none; /* Reset border */
+    }
+    
+    .error-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+      height: auto; /* Allow height to expand */
+      padding: 12px; /* Restore padding */
+      margin-bottom: 20px; /* Restore margin */
+      border: 1px solid rgba(239, 68, 68, 0.2); /* Restore border */
+      pointer-events: auto; /* Enable interactions if needed */
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-5px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    
+    .shake {
+      animation: shake 0.4s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo-area">
+        <i class="fa-solid fa-cloud-bolt logo-icon"></i>
+        <h1>AWSQ API</h1>
+        <p>请输入管理员密码以继续</p>
+      </div>
+      
+      <div class="error-msg" id="error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="error-text">密码错误</span>
+      </div>
+      
+      <form onsubmit="login(event)" style="margin-top: 20px;">
+        <div class="input-group">
+          <input type="password" id="password" name="password" placeholder="请输入密码" autocomplete="current-password" autofocus required />
+          <i class="fa-solid fa-lock input-icon"></i>
+        </div>
+        
+        <button type="submit" id="submitBtn">
+          <span>登录控制台</span>
+          <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+        </button>
+      </form>
+      
+      <div class="footer">
+        &copy; 2026 AWSQ API Management Console
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function login(e) {
+      e.preventDefault();
+      const pwdInput = document.getElementById('password');
+      const submitBtn = document.getElementById('submitBtn');
+      const errorDiv = document.getElementById('error');
+      const errorText = document.getElementById('error-text');
+      const card = document.querySelector('.login-card');
+      
+      const pwd = pwdInput.value;
+      
+      // Loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 验证中...';
+      errorDiv.classList.remove('show');
+      
+      fetch('/v2/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd }),
+        credentials: 'same-origin'
+      })
+      .then(r => {
+        if (r.ok) {
+          return r.json();
+        }
+        throw new Error('密码验证失败');
+      })
+      .then(data => {
+        if (data.success) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 验证成功';
+          submitBtn.style.background = 'var(--color-success)';
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        } else {
+          throw new Error('验证失败');
+        }
+      })
+      .catch(err => {
+        errorText.textContent = '密码错误，请重试';
+        errorDiv.classList.add('show');
+        card.classList.add('shake');
+        
+        setTimeout(() => {
+          card.classList.remove('shake');
+        }, 400);
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>登录控制台</span><i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>';
+        pwdInput.value = '';
+        pwdInput.focus();
+      });
+    }
+  </script>
+</body>
+</html>
