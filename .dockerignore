@@ -1,0 +1,86 @@
+# Python缓存和编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git相关
+.git/
+.gitignore
+.gitattributes
+
+# Docker相关
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# 日志和数据文件
+*.log
+logs/
+data/
+backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# 测试和覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+tests/
+test_*.py
+
+# 文档
+*.md
+README*
+docs/
+.claude/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 开发环境配置
+.env
+.env.local
+.env.development
+*.env.dev
+config.dev.yaml
+config.local.yaml
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# Node相关（如果有前端构建）
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# 项目特定
+services/
+deploy/
+scripts/
+requirements.txt
+requirements-dev.txt

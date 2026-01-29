@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <title>AWSQ API 管理控制台</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <!-- 使用第三方 Google Fonts 镜像（避免 googleapis 在部分网络环境超时）；仍保留系统字体栈兜底 -->
+  <link rel="stylesheet" href="https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/variables.css"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/layout.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/utilities.css"/>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="navbar-brand">
+        <i class="fa-solid fa-cloud-bolt" style="color: var(--color-primary);"></i>
+        <span>AWSQ API</span>
+        <button class="sidebar-toggle" type="button" aria-label="折叠/展开侧边栏" aria-pressed="false" title="折叠侧边栏">
+          <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <nav class="nav-links">
+        <button class="nav-item active" onclick="switchTab('accounts')">
+          <i class="fa-solid fa-users"></i>
+          <span>账号管理</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('status')">
+          <i class="fa-solid fa-heart-pulse"></i>
+          <span>账号状态</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('usage')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>用量查询</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('create')">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>创建账号</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('login')">
+          <i class="fa-solid fa-link"></i>
+          <span>URL登录</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('kiro')">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Kiro导入</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('keys')">
+          <i class="fa-solid fa-key"></i>
+          <span>密钥管理</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('chat')">
+          <i class="fa-solid fa-comments"></i>
+          <span>Chat测试</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('logs')">
+          <i class="fa-solid fa-terminal"></i>
+          <span>操作日志</span>
+        </button>
+      </nav>
+      
+      <div style="margin-top: auto; padding: 1rem;">
+        <button class="nav-item text-danger" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>退出登录</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="toast-container" id="toastContainer"></div>
+      <div id="modalContainer"></div>
+
+      <!-- 账号管理 -->
+      <div id="tab-accounts" class="tab-content active">
+        <div class="flex justify-between items-center mb-4">
+          <h2>账号列表</h2>
+          <div class="flex gap-2 items-center">
+            <label class="flex items-center gap-2 cursor-pointer" title="开启后每5分钟自动检测并删除封禁账号">
+              <input type="checkbox" id="auto-detect-toggle" class="form-checkbox" onchange="toggleAutoDetect(this.checked)"/>
+              <span class="text-sm">自动清理</span>
+            </label>
+            <button class="btn btn-warn" onclick="autoDetectProblemAccounts()">
+              <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+              <span>检测问题账号</span>
+            </button>
+            <button class="btn btn-secondary" onclick="loadAccounts()">
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span id="accounts-refresh-text">刷新</span>
+              <span id="accounts-loading" class="btn-loading" style="display:none;"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i><span>加载中...</span></span>
+            </button>
+            <button class="btn btn-danger" onclick="deleteBannedAccounts()">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>清理封禁</span>
+            </button>
+          </div>
+        </div>
+        <div id="auto-detect-status" class="mb-4" style="display:none;"></div>
+        <div id="problem-accounts-result" class="mb-4" style="display:none;"></div>
+        <div class="grid-container" id="accounts"></div>
+      </div>
+
+      <!-- 账号状态 -->
+      <div id="tab-status" class="tab-content hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2>账号状态监控</h2>
+          <div class="flex gap-2">
+            <div id="status-summary" class="flex gap-2"></div>
+            <button onclick="checkAllAccountsStatus()" class="btn btn-success">
+              <i class="fa-solid fa-stethoscope"></i>
+              <span>一键检测</span>
+            </button>
+            <button onclick="loadAccountStatus()" class="btn btn-primary">
+              <i class="fa-solid fa-rotate"></i>
+              <span>刷新状态</span>
+            </button>
+          </div>
+        </div>
+        <div class="list" id="account-status-list"></div>
+      </div>
+
+      <!-- 用量查询 -->
+      <div id="tab-usage" class="tab-content hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h2>用量查询</h2>
+            <div class="flex gap-2 items-center">
+              <div id="usage_meta" class="usage-meta">更新时间: --</div>
+              <button class="btn btn-secondary" onclick="loadUsage(true)">
+                <i class="fa-solid fa-rotate"></i>
+                <span>刷新</span>
+              </button>
+            </div>
+          </div>
+          <div id="usage_loading" class="loading-state hidden">
+            <span class="loading-spinner"></span>
+            <span>正在加载用量数据...</span>
+          </div>
+          <div id="usage_error" class="alert alert-danger hidden"></div>
+          <div id="usage_empty" class="empty-state">
+            <div class="empty-state-icon"><i class="fa-solid fa-chart-simple"></i></div>
+            <div>点击刷新按钮获取用量信息</div>
+          </div>
+          <div id="usage_list" class="grid-container"></div>
+        </div>
+      </div>
+
+      <!-- 创建账号 -->
+      <div id="tab-create" class="tab-content hidden">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+          <h2 class="mb-4">创建新账号</h2>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="input-group">
+              <label class="input-label" for="new_label">标签名称</label>
+              <input type="text" id="new_label" class="form-control" placeholder="账号标识（可选）"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="new_clientId">Client ID <span class="text-danger">*</span></label>
+              <input type="text" id="new_clientId" class="form-control" placeholder="必填"/>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="input-group">
+              <label class="input-label" for="new_clientSecret">Client Secret <span class="text-danger">*</span></label>
+              <input type="text" id="new_clientSecret" class="form-control" placeholder="必填"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="new_refreshToken">Refresh Token</label>
+              <input type="text" id="new_refreshToken" class="form-control" placeholder="可选"/>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="new_accessToken">Access Token</label>
+            <input type="text" id="new_accessToken" class="form-control" placeholder="可选"/>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="new_other">其他信息 (JSON)</label>
+            <textarea id="new_other" class="form-control" rows="3" placeholder='{"note":"备注信息"}'></textarea>
+          </div>
+
+          <div class="flex justify-between items-center mt-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="new_enabled" type="checkbox" checked class="form-checkbox"/>
+              <span>创建后立即启用</span>
+            </label>
+            <button class="btn btn-primary" onclick="createAccount()">
+              <i class="fa-solid fa-plus"></i>
+              <span>创建账号</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- URL登录 -->
+      <div id="tab-login" class="tab-content hidden">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+          <h2 class="mb-4">URL 登录授权</h2>
+          
+          <div class="flex gap-4 items-end mb-4">
+            <div class="input-group flex-1">
+              <label class="input-label" for="auth_label">标签名称</label>
+              <input type="text" id="auth_label" class="form-control" placeholder="账号标识（可选）"/>
+            </div>
+            <div class="input-group" style="padding-bottom: 0.8rem;">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="auth_enabled" type="checkbox" checked class="form-checkbox"/>
+                <span>创建后启用</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mb-4">
+            <button onclick="startAuth()" class="btn btn-primary">
+              <i class="fa-solid fa-play"></i>
+              <span>开始登录</span>
+            </button>
+            <button onclick="claimAuth()" class="btn btn-secondary">
+              <i class="fa-solid fa-check-to-slot"></i>
+              <span>等待授权并创建</span>
+            </button>
+            <button onclick="quickAddAccount()" class="btn btn-success" style="background-color: var(--color-success); color: white;">
+              <i class="fa-solid fa-bolt"></i>
+              <span>一键获取号池账号</span>
+            </button>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">登录信息</div>
+            <div id="auth_info" class="auth-mount">点击"开始登录"自动轮询授权...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kiro导入 -->
+      <div id="tab-kiro" class="tab-content hidden">
+        <div class="card kiro-container">
+          <h2 class="mb-4">Kiro 账号导入</h2>
+
+          <!-- 基础配置区域 -->
+          <div class="kiro-config-section">
+            <div class="kiro-config-row">
+              <div class="input-group kiro-input-label">
+                <label class="input-label" for="kiro_label">标签名称</label>
+                <input type="text" id="kiro_label" class="form-control" placeholder="账号标识（可选）"/>
+              </div>
+              <div class="input-group kiro-input-region">
+                <label class="input-label" for="kiro_region">Region</label>
+                <input type="text" id="kiro_region" class="form-control" placeholder="us-east-1"/>
+              </div>
+              <div class="input-group kiro-input-checkbox">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input id="kiro_enabled" type="checkbox" checked class="form-checkbox"/>
+                  <span>创建后启用</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Builder ID Start URL (高级配置) -->
+          <div class="input-group kiro-start-url-section">
+            <label class="input-label" for="kiro_start_url">
+              Builder ID Start URL
+              <span class="text-muted text-sm kiro-optional-hint">（可选）</span>
+            </label>
+            <input type="text" id="kiro_start_url" class="form-control" placeholder="https://view.awsapps.com/start"/>
+            <div class="text-muted text-sm mt-1 kiro-hint-text">留空使用默认 AWS Builder ID，填写自定义 URL 可连接企业 IAM Identity Center</div>
+          </div>
+
+          <!-- 授权方式卡片 -->
+          <div class="kiro-auth-grid">
+            <div class="card kiro-auth-card">
+              <div class="kiro-auth-card-icon">
+                <i class="fa-brands fa-aws"></i>
+              </div>
+              <h3 class="kiro-auth-card-title">AWS Builder ID</h3>
+              <p class="kiro-auth-card-desc">使用 AWS Builder ID 进行设备码授权</p>
+              <button class="btn btn-primary kiro-auth-btn" onclick="startKiroAuth('builder-id')">
+                <i class="fa-brands fa-aws"></i>
+                <span>Builder ID 登录</span>
+              </button>
+            </div>
+
+            <div class="card kiro-auth-card">
+              <div class="kiro-auth-card-icon">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <h3 class="kiro-auth-card-title">批量导入 refreshToken</h3>
+              <p class="kiro-auth-card-desc">批量导入已有的 refreshToken，需要 clientId/clientSecret</p>
+              <button class="btn btn-primary kiro-auth-btn" onclick="showKiroBatchImportModal()">
+                <i class="fa-solid fa-cloud-upload"></i>
+                <span>打开导入</span>
+              </button>
+            </div>
+
+            <div class="card kiro-auth-card">
+              <div class="kiro-auth-card-icon">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <h3 class="kiro-auth-card-title">导入 AWS 账号</h3>
+              <p class="kiro-auth-card-desc">从 AWS SSO cache 目录导入凭据文件</p>
+              <button class="btn btn-primary kiro-auth-btn" onclick="showKiroAwsImportModal()">
+                <i class="fa-solid fa-file-import"></i>
+                <span>选择文件</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 导入信息区域 -->
+          <div class="input-group kiro-info-section">
+            <div class="input-label">导入信息</div>
+            <div id="kiro_info" class="auth-mount">选择一种方式开始导入/授权...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 密钥管理 -->
+      <div id="tab-keys" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+              <h2>密钥列表</h2>
+              <button class="btn btn-secondary" onclick="loadKeys()">
+                <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                <span id="keys-refresh-text">刷新</span>
+                <span id="keys-loading" class="btn-loading" style="display:none;"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i><span>加载中...</span></span>
+              </button>
+            </div>
+            <div id="keys" class="grid-container"></div>
+          </div>
+
+          <div>
+            <div class="card">
+              <h3 class="mb-4">创建新密钥</h3>
+              
+              <div class="input-group">
+                <label class="input-label" for="new_key_expires">过期天数</label>
+                <input type="number" id="new_key_expires" class="form-control" placeholder="默认180天" min="1" max="365"/>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="new_key_max_uses">最大使用次数</label>
+                <input type="number" id="new_key_max_uses" class="form-control" placeholder="不限制" min="1"/>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="new_key_rate_limit">速率限制 (次/分)</label>
+                <input type="number" id="new_key_rate_limit" class="form-control" placeholder="加载中..." min="1"/>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="new_key_allowed_ips">IP白名单</label>
+                <input type="text" id="new_key_allowed_ips" class="form-control" placeholder="逗号分隔"/>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="new_key_metadata">备注 (JSON)</label>
+                <textarea id="new_key_metadata" class="form-control" rows="2" placeholder='{"purpose":"..."}'></textarea>
+              </div>
+
+              <button onclick="createKey()" class="btn btn-primary w-full mt-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>生成密钥</span>
+              </button>
+              
+              <div id="new_key_result" class="mt-4 hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat测试 -->
+      <div id="tab-chat" class="tab-content hidden">
+        <div class="card h-full flex flex-col">
+          <div class="flex justify-between items-center mb-4 border-b pb-4">
+            <h2>Chat 测试</h2>
+            <div class="flex gap-2">
+              <select id="model" class="form-control" style="width: 200px;" aria-label="模型">
+                <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                <option value="claude-opus-4">Claude Opus 4</option>
+              </select>
+              <select id="stream" class="form-control" style="width: 120px;" aria-label="是否流式">
+                <option value="false">非流式</option>
+                <option value="true">流式 (SSE)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="input-group">
+              <label class="input-label" for="chat_api_key">API Key</label>
+              <input type="text" id="chat_api_key" class="form-control" placeholder="sk-..." autocomplete="off"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="chat_account_id">Account ID (Optional)</label>
+              <input type="text" id="chat_account_id" class="form-control"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="chat_end_user_id">End User ID (Optional)</label>
+              <input type="text" id="chat_end_user_id" class="form-control"/>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 flex-1" style="min-height: 400px;">
+            <div class="flex flex-col">
+              <label class="input-label" for="messages">发送消息 (JSON)</label>
+              <textarea id="messages" class="form-control flex-1 font-mono" style="font-size: 0.9rem;">[
+  {"role":"system","content":"你是一个乐于助人的AI助手"},
+  {"role":"user","content":"你好，请简单介绍一下自己"}
+]</textarea>
+              <button class="btn btn-primary mt-4" onclick="send()">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>发送请求</span>
+              </button>
+            </div>
+            
+            <div class="flex flex-col">
+              <div class="input-label">响应结果</div>
+              <pre id="out" class="form-control flex-1 font-mono" style="overflow: auto; background: rgba(0,0,0,0.3); color: #a5b4fc;">等待发送请求...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作日志 -->
+      <div id="tab-logs" class="tab-content hidden">
+        <div class="card h-full flex flex-col">
+          <div class="flex justify-between items-center mb-4">
+            <h2>操作日志</h2>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary" onclick="Logger.clear()">
+                <i class="fa-solid fa-eraser"></i>
+                <span>清空</span>
+              </button>
+              <button class="btn btn-secondary" onclick="Logger.export()">
+                <i class="fa-solid fa-download"></i>
+                <span>导出</span>
+              </button>
+            </div>
+          </div>
+          <div class="log-container flex-1" id="logContainer" style="background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 8px; font-family: monospace; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- JS 模块 -->
+  <script src="js/utils/masker.js"></script>
+  <script src="js/utils/logger.js"></script>
+  <script src="js/utils/toast.js"></script>
+  <script src="js/utils/modal.js"></script>
+  <script src="js/api/client.js"></script>
+  <script src="js/modules/accounts.js"></script>
+  <script src="js/modules/keys.js"></script>
+  <script src="js/modules/chat.js"></script>
+  <script src="js/modules/auth.js"></script>
+  <script src="js/modules/kiro.js"></script>
+  <script src="js/modules/usage.js"></script>
+  <script src="js/main.js"></script>
+  <script src="security.js"></script>
+  
+  <script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+      if (tabId === 'status' && typeof loadAccountStatus === 'function') {
+        loadAccountStatus();
+      }
+
+      if (tabId === 'keys' && typeof loadKeys === 'function') {
+        loadKeys();
+      }
+
+      if (tabId === 'usage' && typeof loadUsage === 'function') {
+        loadUsage(false);
+      }
+      
+      // Find the button that calls this function with the same tabId
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(tabId)) {
+          btn.classList.add('active');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

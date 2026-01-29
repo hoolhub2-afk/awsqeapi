@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.log
+
+# Database
+# NOTE: per project requirement, keep the main SQLite file in repo.
+# Still ignore SQLite runtime sidecar files.
+*.sqlite3-shm
+*.sqlite3-wal
+*.db
+
+# Secrets - NEVER commit these
+master.key
+*.key
+*.pem
+cookies.txt
+secrets/
+
+# Backups
+backups/
+*.bak
+*.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
